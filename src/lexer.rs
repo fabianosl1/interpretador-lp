@@ -140,8 +140,9 @@ mod tests {
 
     #[test]
     fn ilegal_token() {
-        let mut lexer = Lexer::new("p1p p");
+        let mut lexer = Lexer::new("p1p p P");
 
+        assert!(matches!(lexer.get_next_token(), Err(_)));
         assert!(matches!(lexer.get_next_token(), Err(_)));
         assert!(matches!(lexer.get_next_token(), Err(_)));
     }
