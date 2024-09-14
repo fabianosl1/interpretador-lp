@@ -1,4 +1,4 @@
-use core::panic;
+use regex::Regex;
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Token {
@@ -42,9 +42,9 @@ impl Lexer {
             '|' => token = Token::Or,
             '(' => token = Token::LParen,
             ')' => token = Token::RParen,
-            '<' => token = self.iff(),
-            '-' => token = self.implies(),
-            'p' => token = self.variable(),
+            '<' => token = self.iff()?,
+            '-' => token = self.implies()?,
+            'p' => token = self.variable()?,
             _ => {
                 let message = format!("Caractere inesperado '{}' na posição {}", ch, self.position);
                 return Err(message);
@@ -61,40 +61,57 @@ impl Lexer {
         }
     }
 
-    fn iff(&mut self) -> Token {
-        if self.position + 2 >= self.input.len() {
-            panic!("Bi-implicação mal formada na posição {}", self.position);
-        }
+    fn iff(&mut self) -> Result<Token, String> {
+        let symbol = "<->";
+        self.check_symbol(symbol)?;
 
-        if self.input[self.position + 1] != '-' || self.input[self.position + 2] != '>' {
-            panic!("Bi-implicação mal formada na posição {}", self.position);
-        }
-
-        self.position += 2;
-        Token::Iff
+        self.position += symbol.len();
+        Ok(Token::Iff)
     }
 
-    fn implies(&mut self) -> Token {
-        self.position += 1;
+    fn implies(&mut self) -> Result<Token, String> {
+        let symbol = "->";
+        self.check_symbol(symbol)?;
 
-        if self.position >= self.input.len() || self.input[self.position] != '>' {
-            panic!("Implicação mal formada na posição {}", self.position);
-        }
-
-        Token::Implies
+        self.position += symbol.len();
+        Ok(Token::Implies)
     }
 
-    fn variable(&mut self) -> Token {
+    fn check_symbol(&mut self, symbol: &str) -> Result<(), String> {
         let start = self.position;
-        self.position += 1;
+        let mut end = start + symbol.len();
 
-        while self.position < self.input.len() && self.input[self.position].is_numeric() {
+        if end >= self.input.len() {
+            end = self.input.len();
+        }
+
+        let word: String = self.input[start..end].iter().collect();
+
+        if word != symbol {
+            return Err(format!("'{}' não faz parte da linguagem", word));
+        }
+
+        Ok(())
+    }
+
+    fn variable(&mut self) -> Result<Token, String> {
+        let start = self.position;
+
+        while self.position < self.input.len()
+            && (self.input[self.position].is_numeric() || self.input[self.position].is_alphabetic())
+        {
             self.position += 1;
         }
 
         let variable: String = self.input[start..self.position].iter().collect();
 
-        Token::Variable(variable)
+        let re = Regex::new(r"^p\d+$").unwrap();
+
+        if re.is_match(&variable) {
+            return Ok(Token::Variable(variable));
+        }
+
+        Err(format!("'{}' não é uma letra proposicional", variable))
     }
 }
 
@@ -104,33 +121,28 @@ mod tests {
 
     #[test]
     fn implies() {
-        let expect = vec![
+        let tokens = vec![
             Token::Variable("p1".to_string()),
             Token::Implies,
             Token::Variable("p3".to_string()),
             Token::EOF,
         ];
 
-        let mut lexer = Lexer::new("p1p -> p3");
+        let mut lexer = Lexer::new("p1 -> p3");
 
-        let result = fetch_all_tokens(&mut lexer);
-
-        assert_eq!(result, expect);
+        tokens
+            .iter()
+            .for_each(|expected| match lexer.get_next_token() {
+                Ok(result) => assert_eq!(*expected, result),
+                Err(message) => panic!("{}", message),
+            });
     }
 
     #[test]
-    fn legal_token() {}
-    fn fetch_all_tokens(lexer: &mut Lexer) -> Vec<Token> {
-        let mut tokens = Vec::new();
+    fn ilegal_token() {
+        let mut lexer = Lexer::new("p1p p");
 
-        while let Ok(token) = lexer.get_next_token() {
-            tokens.push(token.clone());
-            
-            if token == Token::EOF {
-                break;
-            }
-        }
-
-        tokens
+        assert!(matches!(lexer.get_next_token(), Err(_)));
+        assert!(matches!(lexer.get_next_token(), Err(_)));
     }
 }
