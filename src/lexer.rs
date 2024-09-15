@@ -37,11 +37,36 @@ impl Lexer {
         let token: Token;
 
         match ch {
-            '~' => token = Token::Not,
-            '&' => token = Token::And,
-            '|' => token = Token::Or,
-            '(' => token = Token::LParen,
-            ')' => token = Token::RParen,
+            '~' => {
+                token = {
+                    self.position += 1;
+                    Token::Not
+                }
+            }
+            '&' => {
+                token = {
+                    self.position += 1;
+                    Token::And
+                }
+            }
+            '|' => {
+                token = {
+                    self.position += 1;
+                    Token::Or
+                }
+            }
+            '(' => {
+                token = {
+                    self.position += 1;
+                    Token::LParen
+                }
+            }
+            ')' => {
+                token = {
+                    self.position += 1;
+                    Token::RParen
+                }
+            }
             '<' => token = self.iff()?,
             '-' => token = self.implies()?,
             'p' => token = self.variable()?,
@@ -51,7 +76,6 @@ impl Lexer {
             }
         }
 
-        self.position += 1;
         Ok(token)
     }
 
