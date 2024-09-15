@@ -167,7 +167,7 @@ mod tests {
 
     #[test]
     fn when_has_grouped_then_ast_with_grouped() {
-        let result = arrange("p1  (p2 -> p3)").unwrap();
+        let result = arrange("p1 | (p2 -> p3)").unwrap();
 
         let expected = Expression::Or(
             Box::new(Expression::Variable("p1".to_string())),
