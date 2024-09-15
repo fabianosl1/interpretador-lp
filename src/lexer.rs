@@ -38,34 +38,24 @@ impl Lexer {
 
         match ch {
             '~' => {
-                token = {
-                    self.position += 1;
-                    Token::Not
-                }
+                self.position += 1;
+                token = Token::Not;
             }
             '&' => {
-                token = {
-                    self.position += 1;
-                    Token::And
-                }
+                self.position += 1;
+                token = Token::And;
             }
             '|' => {
-                token = {
-                    self.position += 1;
-                    Token::Or
-                }
+                self.position += 1;
+                token = Token::Or;
             }
             '(' => {
-                token = {
-                    self.position += 1;
-                    Token::LParen
-                }
+                self.position += 1;
+                token = Token::LParen;
             }
             ')' => {
-                token = {
-                    self.position += 1;
-                    Token::RParen
-                }
+                self.position += 1;
+                token = Token::RParen;
             }
             '<' => token = self.iff()?,
             '-' => token = self.implies()?,
@@ -144,7 +134,7 @@ mod tests {
     use super::{Lexer, Token};
 
     #[test]
-    fn implies() {
+    fn when_valid_innput_then_ordened_tokens() {
         let tokens = vec![
             Token::Variable("p1".to_string()),
             Token::Implies,
@@ -163,11 +153,19 @@ mod tests {
     }
 
     #[test]
-    fn ilegal_token() {
+    fn when_ilegal_variable_then_except() {
         let mut lexer = Lexer::new("p1p p P");
 
         assert!(matches!(lexer.get_next_token(), Err(_)));
         assert!(matches!(lexer.get_next_token(), Err(_)));
+        assert!(matches!(lexer.get_next_token(), Err(_)));
+    }
+
+    #[test]
+    fn when_invalid_token_then_except() {
+        let mut lexer = Lexer::new("p1 * p2");
+        
+        assert!(matches!(lexer.get_next_token(), Ok(_)));
         assert!(matches!(lexer.get_next_token(), Err(_)));
     }
 }

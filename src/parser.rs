@@ -145,13 +145,13 @@ mod tests {
     }
 
     #[test]
-    fn valid_expression() {
+    fn when_input_valid_then_ok() {
         let result = arrange("p1 -> p2");
         assert!(matches!(result, Ok(_)))
     }
 
     #[test]
-    fn correct_ast() {
+    fn when_valid_token_then_ast() {
         let result = arrange("(p1 | p2) -> p3").unwrap();
 
         let expected = Expression::Implies(
@@ -166,8 +166,8 @@ mod tests {
     }
 
     #[test]
-    fn ast_grouped() {
-        let result = arrange("p1 | (p2 -> p3)").unwrap();
+    fn when_has_grouped_then_ast_with_grouped() {
+        let result = arrange("p1  (p2 -> p3)").unwrap();
 
         let expected = Expression::Or(
             Box::new(Expression::Variable("p1".to_string())),
