@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::lexer::{Lexer, Token};
 
 #[derive(Debug, PartialEq)]
@@ -14,6 +16,7 @@ pub enum Expression {
 pub struct Parser<'a> {
     lexer: &'a mut Lexer,
     current_token: Token,
+    variables: Option<HashMap<String, Option<bool>>>,
 }
 
 impl<'a> Parser<'a> {
@@ -22,6 +25,7 @@ impl<'a> Parser<'a> {
             Ok(current_token) => Parser {
                 lexer,
                 current_token,
+                variables: None,
             },
             Err(message) => panic!("{}", message),
         }
@@ -42,6 +46,16 @@ impl<'a> Parser<'a> {
         }
 
         Ok(result)
+    }
+
+    pub fn get_variables(&mut self) -> HashMap<String, Option<bool>> {
+        if let Some(variables) = &self.variables {
+            variables.clone()
+        } else {
+            self.variables = Some(HashMap::new());
+            let _ = self.parse();
+            self.get_variables()
+        }
     }
 
     fn parse_expression(&mut self) -> Result<Expression, String> {
@@ -124,6 +138,11 @@ impl<'a> Parser<'a> {
             }
             Token::Variable(variable) => {
                 let expression = Expression::Variable(variable.clone());
+
+                if let Some(ref mut variables) = self.variables {
+                    variables.insert(variable.clone(), None);
+                }
+
                 self.next_token();
                 Ok(expression)
             }
@@ -178,6 +197,21 @@ mod tests {
         );
 
         assert_eq!(result, expected)
+    }
+
+    #[test]
+    fn when_get_variables_then_ok() {
+        let mut lexer = Lexer::new("p1 | (p2 -> p3)");
+        let mut parser = Parser::new(&mut lexer);
+        let mut expected = vec!["p1".to_string(), "p2".to_string(), "p3".to_string()];
+
+        let result = parser.get_variables();
+
+        let mut keys = result.keys().cloned().collect::<Vec<String>>();
+        keys.sort();
+        expected.sort();
+
+        assert_eq!(keys, expected)
     }
 
     fn arrange(input: &str) -> Result<Expression, String> {
