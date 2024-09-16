@@ -170,7 +170,7 @@ mod tests {
     }
 
     #[test]
-    fn when_valid_token_then_ast() {
+    fn when_valid_token_then_ok() {
         let result = arrange("(p1 | p2) -> p3").unwrap();
 
         let expected = Expression::Implies(
