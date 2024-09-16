@@ -1,121 +1,75 @@
 use std::collections::HashMap;
 
-use parser::Expression;
+use evaluation::eval;
+use lexer::Lexer;
+use parser::Parser;
+use table::generate_table;
 
+mod evaluation;
 mod lexer;
-pub mod parser;
+mod parser;
+mod table;
 
-pub fn eval(expression: &Expression, variables: &HashMap<String, bool>) -> Result<bool, String> {
-    match expression {
-        Expression::Variable(name) => eval_variable(name.clone(), variables),
-        Expression::Not(inner) => eval_not(inner, variables),
-        Expression::And(left, right) => eval_and(left, right, variables),
-        Expression::Or(left, right) => eval_or(left, &right, variables),
-        Expression::Implies(left, right) => eval_implies(left, right, variables),
-        Expression::Iff(left, right) => eval_iff(left, right, variables),
-        Expression::Grouped(inner) => eval_grouped(inner, variables),
+pub enum Type {
+    Tautology,
+    Contradiction,
+    Contigent,
+}
+
+#[derive(Debug, PartialEq)]
+pub enum Expression {
+    Variable(String),
+    Not(Box<Expression>),
+    And(Box<Expression>, Box<Expression>),
+    Or(Box<Expression>, Box<Expression>),
+    Implies(Box<Expression>, Box<Expression>),
+    Iff(Box<Expression>, Box<Expression>),
+    Grouped(Box<Expression>),
+}
+
+pub fn get_table(variables: &Vec<String>) -> Vec<HashMap<String, bool>> {
+    generate_table(&variables)
+}
+
+pub fn get_type(
+    expression: &Expression,
+    table: &Vec<HashMap<String, bool>>,
+) -> Result<Type, String> {
+    let mut count_true = 0;
+
+    for row in table {
+        let result = eval(expression, &row)?;
+
+        if result == true {
+            count_true += 1
+        }
+    }
+
+    match count_true {
+        0 => Ok(Type::Contradiction),
+        _ => {
+            if count_true == table.len() {
+                return Ok(Type::Tautology);
+            }
+
+            Ok(Type::Contigent)
+        }
     }
 }
 
-fn eval_variable(name: String, variables: &HashMap<String, bool>) -> Result<bool, String> {
-    variables
-        .get(&name)
-        .copied()
-        .ok_or(format!("valor para '{}' não definido", name))
+pub fn parser(input: String) -> Result<(Expression, Vec<String>), String> {
+    let mut lexer = Lexer::new(&input);
+    let mut parser = Parser::new(&mut lexer);
+
+    let expression = parser.parse()?;
+    let variables = parser.get_variables();
+
+    Ok((expression, variables))
 }
 
-fn eval_not(inner: &Expression, variables: &HashMap<String, bool>) -> Result<bool, String> {
-    Ok(!eval(inner, variables)?)
-}
-
-fn eval_and(
-    left: &Expression,
-    right: &Expression,
+pub fn evaluation_expression(
+    expression: &Expression,
     variables: &HashMap<String, bool>,
 ) -> Result<bool, String> {
-    Ok(eval(left, variables)? && eval(right, variables)?)
-}
-
-fn eval_or(
-    left: &Expression,
-    right: &Expression,
-    variables: &HashMap<String, bool>,
-) -> Result<bool, String> {
-    Ok(eval(left, variables)? || eval(right, variables)?)
-}
-
-fn eval_implies(
-    left: &Expression,
-    right: &Expression,
-    variables: &HashMap<String, bool>,
-) -> Result<bool, String> {
-    let value_left = !eval(left, variables)?;
-    Ok(value_left || (value_left && eval(right, variables)?))
-}
-
-fn eval_iff(
-    left: &Expression,
-    right: &Expression,
-    variables: &HashMap<String, bool>,
-) -> Result<bool, String> {
-    Ok(eval(left, variables)? == eval(right, variables)?)
-}
-
-fn eval_grouped(inner: &Expression, variables: &HashMap<String, bool>) -> Result<bool, String> {
-    Ok(eval(inner, variables)?)
-}
-
-#[cfg(test)]
-mod tests {
-    use std::{collections::HashMap, vec};
-
-    use crate::{
-        eval,
-        lexer::Lexer,
-        parser::{Expression, Parser},
-    };
-
-    #[test]
-    fn when_valid_inputs_then_ok() {
-        let inputs = vec!["p1 & p2", "p1 | p2", "~(p1 & p2)"];
-
-        let variables = arrange_variables();
-
-        inputs.iter().for_each(|input| {
-            let expression = arrange_expression(&input);
-            let result = eval(&expression, &variables);
-
-            assert!(matches!(result, Ok(_)));
-        })
-    }
-
-    #[test]
-    fn when_should_be_true_then_true() {
-        let expression = arrange_expression("~(p1 & p2)");
-        let mut variables = arrange_variables();
-
-        let mut result = eval(&expression, &variables).unwrap();
-        assert_eq!(result, false);
-
-        variables.insert("p2".to_string(), false);
-
-        result = eval(&expression, &variables).unwrap();
-        assert_eq!(result, true);
-    }
-
-    fn arrange_expression(input: &str) -> Expression {
-        let mut lexer = Lexer::new(input);
-        let mut parser = Parser::new(&mut lexer);
-
-        parser.parse().unwrap()
-    }
-
-    fn arrange_variables() -> HashMap<String, bool> {
-        let mut variables: HashMap<String, bool> = HashMap::new();
-
-        variables.insert("p1".to_string(), true);
-        variables.insert("p2".to_string(), true);
-
-        variables
-    }
+    eval(expression, variables)
 }
