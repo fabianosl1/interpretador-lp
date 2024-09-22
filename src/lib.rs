@@ -57,7 +57,7 @@ pub fn get_type(
     }
 }
 
-pub fn parser(input: String) -> Result<(Expression, Vec<String>), String> {
+pub fn parser(input: &str) -> Result<(Expression, Vec<String>), String> {
     let mut lexer = Lexer::new(&input);
     let mut parser = Parser::new(&mut lexer);
 
@@ -72,4 +72,39 @@ pub fn evaluation_expression(
     variables: &HashMap<String, bool>,
 ) -> Result<bool, String> {
     eval(expression, variables)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    
+    #[test]
+    fn when_contradition_input_then_ok() {
+        let (expression, variables) = parser("p1 & ~p1").unwrap();
+        let table = get_table(&variables);
+
+        let result = get_type(&expression, &table).unwrap();
+
+        assert!(matches!(result, Type::Contradiction))
+    }
+    
+    #[test]
+    fn when_tautology_input_then_ok() {
+        let (expression, variables) = parser("(p1 & p2) -> (p1 | p2)").unwrap();
+        let table = get_table(&variables);
+        
+        let result = get_type(&expression, &table).unwrap();
+
+        assert!(matches!(result, Type::Tautology))
+    }
+
+    #[test]
+    fn when_contigent_input_then_ok() {
+        let (expression, variables) = parser("(p1 | p2) & p3").unwrap();
+        let table = get_table(&variables);
+
+        let result = get_type(&expression, &table).unwrap();
+
+        assert!(matches!(result, Type::Contigent))
+    }
 }
