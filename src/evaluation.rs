@@ -47,8 +47,8 @@ pub fn eval_implies(
     right: &Expression,
     variables: &HashMap<String, bool>,
 ) -> Result<bool, String> {
-    let value_left = !eval(left, variables)?;
-    Ok(value_left || (value_left && eval(right, variables)?))
+    let value_left = eval(left, variables)?;
+    Ok(!value_left || (value_left && eval(right, variables)?))
 }
 
 pub fn eval_iff(
