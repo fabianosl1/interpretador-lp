@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use evaluation::eval;
 use lexer::Lexer;
 use parser::Parser;
+use serde::Serialize;
 use table::generate_table;
 
 mod evaluation;
@@ -10,13 +11,14 @@ mod lexer;
 mod parser;
 mod table;
 
+#[derive(Serialize)]
 pub enum Type {
     Tautology,
     Contradiction,
     Contigent,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, serde::Serialize)]
 pub enum Expression {
     Variable(String),
     Not(Box<Expression>),
@@ -59,7 +61,7 @@ pub fn get_type(
 
 pub fn parser(input: &str) -> Result<(Expression, Vec<String>), String> {
     let mut lexer = Lexer::new(&input);
-    let mut parser = Parser::new(&mut lexer);
+    let mut parser = Parser::new(&mut lexer)?;
 
     let expression = parser.parse()?;
     let variables = parser.get_variables();

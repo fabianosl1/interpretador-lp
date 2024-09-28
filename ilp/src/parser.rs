@@ -1,29 +1,28 @@
+use std::collections::HashSet;
+
 use crate::{lexer::{Lexer, Token}, Expression};
 
 
 pub struct Parser<'a> {
     lexer: &'a mut Lexer,
     current_token: Token,
-    variables: Option<Vec<String>>,
+    variables: HashSet<String>,
 }
 
 impl<'a> Parser<'a> {
-    pub fn new(lexer: &'a mut Lexer) -> Self {
-        match lexer.get_next_token() {
-            Ok(current_token) => Parser {
-                lexer,
-                current_token,
-                variables: None,
-            },
-            Err(message) => panic!("{}", message),
-        }
+    pub fn new(lexer: &'a mut Lexer) -> Result<Self, String> {
+        let current_token = lexer.get_next_token()?;
+
+        Ok(Parser {
+            lexer,
+            current_token,
+            variables: HashSet::new(),
+        })
     }
 
-    fn next_token(&mut self) {
-        match self.lexer.get_next_token() {
-            Ok(token) => self.current_token = token,
-            Err(message) => panic!("{}", message),
-        }
+    fn next_token(&mut self) -> Result<(), String> {
+        self.current_token = self.lexer.get_next_token()?;
+        Ok(())
     }
 
     pub fn parse(&mut self) -> Result<Expression, String> {
@@ -37,13 +36,7 @@ impl<'a> Parser<'a> {
     }
 
     pub fn get_variables(&mut self) -> Vec<String> {
-        if let Some(variables) = &self.variables {
-            variables.clone()
-        } else {
-            self.variables = Some(Vec::new());
-            let _ = self.parse();
-            self.get_variables()
-        }
+        self.variables.iter().cloned().collect()
     }
 
     fn parse_expression(&mut self) -> Result<Expression, String> {
@@ -54,7 +47,7 @@ impl<'a> Parser<'a> {
         let mut left = self.parse_implies()?;
 
         while self.current_token == Token::Iff {
-            self.next_token();
+            self.next_token()?;
             let right = self.parse_implies()?;
             left = Expression::Iff(Box::new(left), Box::new(right));
         }
@@ -66,7 +59,7 @@ impl<'a> Parser<'a> {
         let mut left = self.parse_or()?;
 
         while self.current_token == Token::Implies {
-            self.next_token();
+            self.next_token()?;
             let right = self.parse_or()?;
             left = Expression::Implies(Box::new(left), Box::new(right));
         }
@@ -78,7 +71,7 @@ impl<'a> Parser<'a> {
         let mut left = self.parse_and()?;
 
         while self.current_token == Token::Or {
-            self.next_token();
+            self.next_token()?;
             let right = self.parse_and()?;
             left = Expression::Or(Box::new(left), Box::new(right));
         }
@@ -90,7 +83,7 @@ impl<'a> Parser<'a> {
         let mut left = self.parse_not()?;
 
         while self.current_token == Token::And {
-            self.next_token();
+            self.next_token()?;
             let right = self.parse_not()?;
             left = Expression::And(Box::new(left), Box::new(right));
         }
@@ -100,7 +93,7 @@ impl<'a> Parser<'a> {
 
     fn parse_not(&mut self) -> Result<Expression, String> {
         if self.current_token == Token::Not {
-            self.next_token();
+            self.next_token()?;
             let expression = self.parse_not()?;
             return Ok(Expression::Not(Box::new(expression)));
         }
@@ -111,7 +104,7 @@ impl<'a> Parser<'a> {
     fn parse_primary(&mut self) -> Result<Expression, String> {
         match &self.current_token {
             Token::LParen => {
-                self.next_token();
+                self.next_token()?;
                 let expression = self.parse_expression()?;
 
                 if self.current_token != Token::RParen {
@@ -121,17 +114,16 @@ impl<'a> Parser<'a> {
                     ));
                 }
 
-                self.next_token();
+                self.next_token()?;
                 Ok(Expression::Grouped(Box::new(expression)))
             }
             Token::Variable(variable) => {
                 let expression = Expression::Variable(variable.clone());
 
-                if let Some(ref mut variables) = self.variables {
-                    variables.push(variable.clone());
-                }
+                self.variables.insert(variable.clone());
+                
+                self.next_token()?;
 
-                self.next_token();
                 Ok(expression)
             }
             _ => Err(format!("token inesperado {:?}", self.current_token)),
@@ -190,7 +182,9 @@ mod tests {
     #[test]
     fn when_get_variables_then_ok() {
         let mut lexer = Lexer::new("p1 | (p2 -> p3)");
-        let mut parser = Parser::new(&mut lexer);
+        let mut parser = Parser::new(&mut lexer).unwrap();
+        let _ = parser.parse();
+
         let expected = vec!["p1".to_string(), "p2".to_string(), "p3".to_string()];
 
         let mut result = parser.get_variables();
@@ -202,7 +196,7 @@ mod tests {
 
     fn arrange(input: &str) -> Result<Expression, String> {
         let mut lexer = Lexer::new(input);
-        let mut parser = Parser::new(&mut lexer);
+        let mut parser = Parser::new(&mut lexer).unwrap();
 
         parser.parse()
     }

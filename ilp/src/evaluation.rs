@@ -100,7 +100,7 @@ mod tests {
 
     fn arrange_expression(input: &str) -> Expression {
         let mut lexer = Lexer::new(input);
-        let mut parser = Parser::new(&mut lexer);
+        let mut parser = Parser::new(&mut lexer).unwrap();
 
         parser.parse().unwrap()
     }
