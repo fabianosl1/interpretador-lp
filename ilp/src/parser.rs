@@ -20,6 +20,10 @@ impl<'a> Parser<'a> {
         })
     }
 
+    pub fn get_variables(&mut self) -> Vec<String> {
+        self.variables.iter().cloned().collect()
+    }
+
     fn next_token(&mut self) -> Result<(), String> {
         self.current_token = self.lexer.get_next_token()?;
         Ok(())
@@ -33,10 +37,6 @@ impl<'a> Parser<'a> {
         }
 
         Ok(result)
-    }
-
-    pub fn get_variables(&mut self) -> Vec<String> {
-        self.variables.iter().cloned().collect()
     }
 
     fn parse_expression(&mut self) -> Result<Expression, String> {
