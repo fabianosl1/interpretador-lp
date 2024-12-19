@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import "./App.css";
-import { invoke } from "@tauri-apps/api";
+import { invoke } from "@tauri-apps/api/core";
 
 const messages = {
   "Contigent": "A formula é contigente",
@@ -83,10 +83,10 @@ function App() {
         </tr>
         </thead>
         <tbody>
-        {table.map((row, index) => (
-          <tr key={index}>
-            {tableHeader.map((header, index) => (
-              <td key={index}>{row[header] ? "V" : "F"}</td>
+        {table.map((row, rowIndex) => (
+          <tr key={rowIndex}>
+            {tableHeader.map((header, colIndex) => (
+              <td key={`${rowIndex}-${colIndex}`}>{row[header] ? "V" : "F"}</td>
             ))}
           </tr>
         ))}

@@ -36,10 +36,6 @@
   transition: 0.75s;
 }
 
-.logo.tauri:hover {
-  filter: drop-shadow(0 0 2em #24c8db);
-}
-
 .row {
   display: flex;
   justify-content: center;
@@ -137,16 +133,10 @@ button {
 
 .table tbody tr {
   border-bottom: 1px solid #dddddd;
-}
-
-.table tbody tr:nth-of-type(even) {
-  background-color: #f3f3f3;
+  background-color: #3b3b3b;
 }
 
 .table tbody tr:last-of-type {
   border-bottom: 2px solid #009879;
 }
 
-.table tbody tr:hover {
-  background-color: #f1f1f1;
-}
