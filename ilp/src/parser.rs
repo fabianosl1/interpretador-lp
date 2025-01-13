@@ -1,7 +1,9 @@
 use std::collections::HashSet;
 
-use crate::{lexer::{Lexer, Token}, Expression};
-
+use crate::{
+    lexer::{Lexer, Token},
+    Expression,
+};
 
 pub struct Parser<'a> {
     lexer: &'a mut Lexer,
@@ -109,7 +111,7 @@ impl<'a> Parser<'a> {
 
                 if self.current_token != Token::RParen {
                     return Err(format!(
-                        "Esperado ')', mas encontrou {:?}",
+                        "esperava ')' mas encontrou {:?}",
                         self.current_token
                     ));
                 }
@@ -121,12 +123,15 @@ impl<'a> Parser<'a> {
                 let expression = Expression::Variable(variable.clone());
 
                 self.variables.insert(variable.clone());
-                
+
                 self.next_token()?;
 
                 Ok(expression)
             }
-            _ => Err(format!("token inesperado {:?}", self.current_token)),
+            _ => Err(format!(
+                "esperava uma letra proposicional ou '(' mas econtrou {:?}",
+                self.current_token
+            )),
         }
     }
 }

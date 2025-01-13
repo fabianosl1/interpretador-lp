@@ -59,10 +59,14 @@ impl Lexer {
             }
             '<' => token = self.iff()?,
             '-' => token = self.implies()?,
-            'p' => token = self.variable()?,
             _ => {
-                let message = format!("Caractere inesperado '{}' na posição {}", ch, self.position);
-                return Err(message);
+                if ch.is_ascii_alphanumeric() {
+                    token = self.variable()?
+                } else {
+                    let message =
+                        format!("Caractere inesperado '{}' na posição {}", ch, self.position);
+                    return Err(message);
+                }
             }
         }
 
@@ -164,7 +168,7 @@ mod tests {
     #[test]
     fn when_invalid_token_then_except() {
         let mut lexer = Lexer::new("p1 * p2");
-        
+
         assert!(matches!(lexer.get_next_token(), Ok(_)));
         assert!(matches!(lexer.get_next_token(), Err(_)));
     }
