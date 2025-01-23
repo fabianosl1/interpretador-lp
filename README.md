@@ -1,7 +1,7 @@
 
 ## Descrição
 
-O interpretador recebe uma expressão gera uma tabela verdade e xibe o tipo de expressão(contigente, tautologia ou contradição).
+O interpretador recebe uma expressão gera uma tabela verdade e exibe o tipo de expressão(contigente, tautologia ou contradição).
 
 Na pasta `ilp` temos a biblioteca da linguagem proposicional, contendo os componentes da linguagem.
 
